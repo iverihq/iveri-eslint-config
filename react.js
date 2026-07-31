@@ -2,7 +2,7 @@ const globals = require('globals');
 const reactHooks = require('eslint-plugin-react-hooks');
 const reactRefresh = require('eslint-plugin-react-refresh');
 
-const { base } = require('./base');
+const { base, specOverrides } = require('./base');
 
 /**
  * React + Vite apps. `react-refresh` is what keeps hot reload from silently breaking:
@@ -33,6 +33,8 @@ const react = [
             'import/no-default-export': 'off',
         },
     },
+    // Last, so the blocks above cannot re-enable a rule in a spec file.
+    specOverrides,
 ];
 
 module.exports = { react };

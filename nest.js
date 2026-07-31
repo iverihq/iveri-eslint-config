@@ -1,6 +1,6 @@
 const globals = require('globals');
 
-const { base } = require('./base');
+const { base, specOverrides } = require('./base');
 
 /**
  * NestJS services. Adds node + jest globals and relaxes the handful of rules that
@@ -32,6 +32,8 @@ const nest = [
             '@typescript-eslint/no-unnecessary-condition': 'off',
         },
     },
+    // Last, so the blocks above cannot re-enable a rule in a spec file.
+    specOverrides,
 ];
 
 module.exports = { nest };
