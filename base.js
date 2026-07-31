@@ -85,6 +85,24 @@ const base = [
         },
     },
     {
+        // Jest's matchers are typed loosely (`expect.any`, `objectContaining` return `any`) and
+        // test doubles are deliberately partial. Enforcing the strict-typing rules here buys
+        // nothing and pushes people towards `eslint-disable`, which is worse.
+        //
+        // This lives in `base` rather than `nest` because every package has specs, including
+        // the ones that never see NestJS.
+        files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.e2e-spec.ts', '**/test/**/*.ts'],
+        rules: {
+            '@typescript-eslint/no-non-null-assertion': 'off',
+            '@typescript-eslint/no-unsafe-assignment': 'off',
+            '@typescript-eslint/no-unsafe-argument': 'off',
+            '@typescript-eslint/no-unsafe-call': 'off',
+            '@typescript-eslint/no-unsafe-member-access': 'off',
+            '@typescript-eslint/explicit-function-return-type': 'off',
+            '@typescript-eslint/no-unnecessary-condition': 'off',
+        },
+    },
+    {
         // Tooling config files and scripts run outside the type-aware project and are allowed
         // a default export.
         //

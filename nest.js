@@ -32,21 +32,6 @@ const nest = [
             '@typescript-eslint/no-unnecessary-condition': 'off',
         },
     },
-    {
-        // Jest's matchers are typed loosely (`expect.any`, `objectContaining` return `any`) and
-        // test doubles are deliberately partial. Enforcing the strict-typing rules here buys
-        // nothing and pushes people towards `eslint-disable`, which is worse.
-        files: ['**/*.spec.ts', '**/*.e2e-spec.ts', '**/test/**/*.ts'],
-        rules: {
-            '@typescript-eslint/no-non-null-assertion': 'off',
-            '@typescript-eslint/no-unsafe-assignment': 'off',
-            '@typescript-eslint/no-unsafe-argument': 'off',
-            '@typescript-eslint/no-unsafe-call': 'off',
-            '@typescript-eslint/no-unsafe-member-access': 'off',
-            '@typescript-eslint/explicit-function-return-type': 'off',
-            '@typescript-eslint/no-unnecessary-condition': 'off',
-        },
-    },
 ];
 
 module.exports = { nest };

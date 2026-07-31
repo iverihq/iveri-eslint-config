@@ -1,6 +1,6 @@
 {
   "name": "@iveri/eslint-config",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Shared ESLint flat configurations for Iveri repos",
   "license": "MIT",
   "repository": {
@@ -51,7 +51,7 @@
     "typescript": ">=5.5"
   },
   "devDependencies": {
-    "@iveri/prettier-config": "^0.0.1",
+    "@iveri/prettier-config": "^0.1.0",
     "eslint": "^9.18.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.3"
