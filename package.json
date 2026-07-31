@@ -1,0 +1,59 @@
+{
+  "name": "@iveri/eslint-config",
+  "version": "0.0.1",
+  "description": "Shared ESLint flat configurations for Iveri repos",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iverihq/iveri-eslint-config.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./base": "./base.js",
+    "./nest": "./nest.js",
+    "./react": "./react.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "base.js",
+    "nest.js",
+    "react.js",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "echo \"@iveri/eslint-config ships JS only — nothing to build\"",
+    "test": "node ./scripts/verify-config.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prettier": "@iveri/prettier-config",
+  "dependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "typescript-eslint": "^8.20.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=9",
+    "typescript": ">=5.5"
+  },
+  "devDependencies": {
+    "@iveri/prettier-config": "^0.0.1",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  }
+}
