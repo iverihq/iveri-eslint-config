@@ -139,6 +139,11 @@ const specOverrides = {
         '@typescript-eslint/explicit-function-return-type': 'off',
         '@typescript-eslint/no-unnecessary-condition': 'off',
         '@typescript-eslint/unbound-method': 'off',
+
+        // A test's job includes simulating a dependency that misbehaves. Asserting how code
+        // survives a driver rejecting with a bare string requires writing that rejection.
+        '@typescript-eslint/prefer-promise-reject-errors': 'off',
+        '@typescript-eslint/only-throw-error': 'off',
     },
 };
 
