@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2025",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": [],
+    "noEmit": true
+  },
+  "include": ["src"]
+}

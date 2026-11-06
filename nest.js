@@ -1,26 +1,24 @@
-const globals = require('globals');
+import globals from 'globals';
 
-const { base, specOverrides } = require('./base');
+import { compose, TS_FILES } from './base.js';
 
 /**
- * NestJS services. Adds node + jest globals and relaxes the handful of rules that
- * fight the framework's own idioms rather than catching real defects.
+ * NestJS services and `@iveri/nest-sdk`. Node's globals, plus the handful of relaxations for
+ * rules that fight the framework's own idioms rather than catching real defects.
+ *
+ * No test-runner globals: specs import `describe`, `it`, `expect` and `vi` from `vitest`.
  */
-const nest = [
-    ...base,
+export const nest = compose(
     {
-        files: ['**/*.ts'],
+        files: TS_FILES,
         languageOptions: {
             globals: {
                 ...globals.node,
-                ...globals.jest,
             },
         },
         rules: {
             // `@Module({})` classes have no members by design.
             '@typescript-eslint/no-extraneous-class': 'off',
-            // Decorator factories are declared as `unknown`-returning by Nest itself.
-            '@typescript-eslint/no-unsafe-argument': 'error',
             '@typescript-eslint/unbound-method': ['error', { ignoreStatic: true }],
         },
     },
@@ -32,8 +30,4 @@ const nest = [
             '@typescript-eslint/no-unnecessary-condition': 'off',
         },
     },
-    // Last, so the blocks above cannot re-enable a rule in a spec file.
-    specOverrides,
-];
-
-module.exports = { nest };
+);

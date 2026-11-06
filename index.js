@@ -1,5 +1,4 @@
-const { base, namingConvention } = require('./base');
-const { nest } = require('./nest');
-const { react } = require('./react');
-
-module.exports = { base, nest, react, namingConvention };
+export { base, compose, namingConvention, specOverrides } from './base.js';
+export { nest } from './nest.js';
+export { node } from './node.js';
+export { react } from './react.js';

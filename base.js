@@ -1,17 +1,19 @@
-const eslint = require('@eslint/js');
-const eslintConfigPrettier = require('eslint-config-prettier');
-const importPlugin = require('eslint-plugin-import');
-const globals = require('globals');
-const tseslint = require('typescript-eslint');
+import eslint from '@eslint/js';
+import eslintConfigPrettier from 'eslint-config-prettier/flat';
+import { importX } from 'eslint-plugin-import-x';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
-const TS_FILES = ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'];
+/** @typedef {import('eslint').Linter.Config} Config */
+
+export const TS_FILES = ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'];
 
 /**
  * Naming rules from the workspace CLAUDE.md, expressed as selectors.
  * `requiresQuotes` is exempted so HTTP headers and other quoted keys
  * (`'Content-Type'`, `'x-correlation-id'`) do not have to fight the linter.
  */
-const namingConvention = [
+export const namingConvention = [
     'error',
     { selector: 'default', format: ['camelCase'], leadingUnderscore: 'allow' },
     { selector: 'variable', format: ['camelCase', 'UPPER_CASE', 'PascalCase'], leadingUnderscore: 'allow' },
@@ -31,17 +33,18 @@ const namingConvention = [
 ];
 
 /**
- * Shared TypeScript baseline. Consumers append their own block setting
- * `parserOptions.tsconfigRootDir` so the type-aware rules resolve the right project.
+ * The type-aware TypeScript baseline every variant starts from. Not exported on its own: a
+ * consumer takes a finished variant, so the spec relaxations and Prettier are always last.
+ *
+ * @type {Config[]}
  */
-const base = [
+const core = [
     {
         ignores: ['**/dist/**', '**/coverage/**', '**/node_modules/**', '**/*.d.ts'],
     },
     eslint.configs.recommended,
     ...tseslint.configs.recommendedTypeChecked,
     ...tseslint.configs.stylisticTypeChecked,
-    eslintConfigPrettier,
     {
         files: TS_FILES,
         languageOptions: {
@@ -51,7 +54,7 @@ const base = [
             },
         },
         plugins: {
-            import: importPlugin,
+            'import-x': importX,
         },
         rules: {
             '@typescript-eslint/no-explicit-any': 'error',
@@ -63,12 +66,21 @@ const base = [
             '@typescript-eslint/no-misused-promises': 'error',
             '@typescript-eslint/no-unnecessary-condition': 'error',
             '@typescript-eslint/consistent-type-definitions': 'off',
+            // `verbatimModuleSyntax` makes TypeScript refuse a type imported as a value; this is the
+            // half that can fix it. Separate statements, never `import { type X }`, because an
+            // inline type specifier leaves an `import {} from` behind that still loads the module.
+            // With decorator metadata on, files carrying decorators are left alone: an injected
+            // class is a type annotation to the eye and a runtime value to Nest's DI.
+            '@typescript-eslint/consistent-type-imports': [
+                'error',
+                { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+            ],
             '@typescript-eslint/naming-convention': namingConvention,
             '@typescript-eslint/no-unused-vars': [
                 'error',
                 { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
             ],
-            'import/order': [
+            'import-x/order': [
                 'error',
                 {
                     // `parent` is ranked ahead of `sibling` rather than sharing one relative
@@ -79,26 +91,26 @@ const base = [
                     alphabetize: { order: 'asc', caseInsensitive: true },
                 },
             ],
-            'import/no-default-export': 'error',
+            'import-x/no-default-export': 'error',
             'no-console': ['warn', { allow: ['warn', 'error'] }],
             eqeqeq: ['error', 'always', { null: 'ignore' }],
         },
     },
     {
-        // Tooling config files and scripts run outside the type-aware project and are allowed
-        // a default export.
+        // Tooling configs and scripts run outside the type-aware project and may default-export.
         //
         // Deliberately NOT `**/*.config.ts`: `.config.ts` is one of our own role suffixes
         // (`base-env.config.ts`, `app-env.config.ts`), and that glob would quietly strip type
-        // information from real source files. The TypeScript tooling configs are listed by name.
+        // information from real source files. The tooling configs are listed by name.
         files: [
             '**/*.js',
             '**/*.cjs',
             '**/*.mjs',
             '**/scripts/**',
             '**/vite.config.ts',
-            '**/tailwind.config.ts',
-            '**/jest.config.ts',
+            '**/vitest.config.ts',
+            '**/postcss.config.ts',
+            '**/eslint.config.ts',
         ],
         ...tseslint.configs.disableTypeChecked,
         languageOptions: {
@@ -108,10 +120,9 @@ const base = [
         },
         rules: {
             ...tseslint.configs.disableTypeChecked.rules,
-            'import/no-default-export': 'off',
+            'import-x/no-default-export': 'off',
             '@typescript-eslint/explicit-function-return-type': 'off',
             'no-console': 'off',
-            '@typescript-eslint/no-require-imports': 'off',
         },
     },
 ];
@@ -119,15 +130,13 @@ const base = [
 /**
  * Rule relaxations for test files.
  *
- * Jest's matchers are typed loosely (`expect.any` and `objectContaining` return `any`) and test
- * doubles are deliberately partial. Enforcing the strict-typing rules in a spec buys nothing and
- * pushes people towards `eslint-disable`, which is worse.
+ * Matchers are typed loosely (`expect.any` and `objectContaining` return `any`) and test doubles
+ * are deliberately partial. Enforcing the strict-typing rules in a spec buys nothing and pushes
+ * people towards `eslint-disable`, which is worse.
  *
- * Exported separately, and spread **last** by every variant, because flat config resolves by
- * order: a later block matching `**\/*.ts` re-enables whatever an earlier one relaxed. Folding
- * this into `base` silently stopped working the moment `nest` set `no-unsafe-argument` after it.
+ * @type {Config}
  */
-const specOverrides = {
+export const specOverrides = {
     files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.e2e-spec.ts', '**/test/**/*.ts', '**/test/**/*.tsx'],
     rules: {
         '@typescript-eslint/no-non-null-assertion': 'off',
@@ -147,4 +156,17 @@ const specOverrides = {
     },
 };
 
-module.exports = { base: [...base, specOverrides], namingConvention, specOverrides };
+/**
+ * Assembles a variant. The order is the contract, because flat config resolves by position: the
+ * variant's own blocks after the shared core, then the spec relaxations, so nothing a variant sets
+ * can re-enable a rule inside a spec, then Prettier's switch-offs, so no formatting rule survives.
+ *
+ * @param {...Config} variantBlocks
+ * @returns {Config[]}
+ */
+export function compose(...variantBlocks) {
+    return [...core, ...variantBlocks, specOverrides, eslintConfigPrettier];
+}
+
+/** The TypeScript baseline with nothing environment-specific. */
+export const base = compose();
