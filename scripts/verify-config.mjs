@@ -30,6 +30,11 @@ async function lint(variant, fixture, file, { fix = false } = {}) {
     });
     const [result] = await eslint.lintFiles([file]);
 
+    // A file ESLint could not parse reports one fatal message and runs no rule at all, so every
+    // assertion that a rule did *not* fire would pass on it. None of the fixtures may fail to parse.
+    const fatal = result.messages.find((message) => message.fatal);
+    assert.equal(fatal, undefined, `${fixture}/${file} did not parse: ${fatal?.message}`);
+
     return { ruleIds: result.messages.map((message) => message.ruleId), result };
 }
 
@@ -60,11 +65,10 @@ assert.ok(
     `a default export in source should be refused: ${ruleIdsOf(defaultExport)}`,
 );
 
+// Outside every tsconfig by design, so it must be linted without type information — and then
+// clean, default export included, because its tool requires one.
 const toolingConfig = await lint(node, 'node', 'vite.config.ts');
-assert.ok(
-    !toolingConfig.ruleIds.includes('import-x/no-default-export'),
-    'a tooling config may default-export, because its tool requires it',
-);
+assert.deepEqual(toolingConfig.ruleIds, [], `vite.config.ts should lint clean, reported: ${ruleIdsOf(toolingConfig)}`);
 
 const conditionalHook = await lint(react, 'react', 'src/conditional-hook.tsx');
 assert.ok(

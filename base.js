@@ -114,6 +114,10 @@ const core = [
         ],
         ...tseslint.configs.disableTypeChecked,
         languageOptions: {
+            // Spread, not replaced: `disableTypeChecked` turns the project service off here, and a
+            // `languageOptions` of our own would silently drop that and parse these files type-aware
+            // against a tsconfig that does not include them.
+            ...tseslint.configs.disableTypeChecked.languageOptions,
             globals: {
                 ...globals.node,
             },
