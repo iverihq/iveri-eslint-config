@@ -96,40 +96,49 @@ const core = [
             eqeqeq: ['error', 'always', { null: 'ignore' }],
         },
     },
-    {
-        // Tooling configs and scripts run outside the type-aware project and may default-export.
-        //
-        // Deliberately NOT `**/*.config.ts`: `.config.ts` is one of our own role suffixes
-        // (`base-env.config.ts`, `app-env.config.ts`), and that glob would quietly strip type
-        // information from real source files. The tooling configs are listed by name.
-        files: [
-            '**/*.js',
-            '**/*.cjs',
-            '**/*.mjs',
-            '**/scripts/**',
-            '**/vite.config.ts',
-            '**/vitest.config.ts',
-            '**/postcss.config.ts',
-            '**/eslint.config.ts',
-        ],
-        ...tseslint.configs.disableTypeChecked,
-        languageOptions: {
-            // Spread, not replaced: `disableTypeChecked` turns the project service off here, and a
-            // `languageOptions` of our own would silently drop that and parse these files type-aware
-            // against a tsconfig that does not include them.
-            ...tseslint.configs.disableTypeChecked.languageOptions,
-            globals: {
-                ...globals.node,
-            },
-        },
-        rules: {
-            ...tseslint.configs.disableTypeChecked.rules,
-            'import-x/no-default-export': 'off',
-            '@typescript-eslint/explicit-function-return-type': 'off',
-            'no-console': 'off',
+];
+
+/**
+ * Tooling configs and scripts: linted without type information, and free to default-export.
+ *
+ * Composed **after** every variant's own blocks. A variant setting a type-aware rule for
+ * `TS_FILES` — `nest` configures `unbound-method` — would otherwise switch it back on for
+ * `vitest.config.ts`, where there is no type information to run it with, and ESLint aborts the
+ * whole run rather than reporting one file.
+ *
+ * @type {Config}
+ */
+const tooling = {
+    // Deliberately NOT `**/*.config.ts`: `.config.ts` is one of our own role suffixes
+    // (`base-env.config.ts`, `app-env.config.ts`), and that glob would quietly strip type
+    // information from real source files. The tooling configs are listed by name.
+    files: [
+        '**/*.js',
+        '**/*.cjs',
+        '**/*.mjs',
+        '**/scripts/**',
+        '**/vite.config.ts',
+        '**/vitest.config.ts',
+        '**/postcss.config.ts',
+        '**/eslint.config.ts',
+    ],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+        // Spread, not replaced: `disableTypeChecked` turns the project service off here, and a
+        // `languageOptions` of our own would silently drop that and parse these files type-aware
+        // against a tsconfig that does not include them.
+        ...tseslint.configs.disableTypeChecked.languageOptions,
+        globals: {
+            ...globals.node,
         },
     },
-];
+    rules: {
+        ...tseslint.configs.disableTypeChecked.rules,
+        'import-x/no-default-export': 'off',
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        'no-console': 'off',
+    },
+};
 
 /**
  * Rule relaxations for test files.
@@ -162,14 +171,16 @@ export const specOverrides = {
 
 /**
  * Assembles a variant. The order is the contract, because flat config resolves by position: the
- * variant's own blocks after the shared core, then the spec relaxations, so nothing a variant sets
- * can re-enable a rule inside a spec, then Prettier's switch-offs, so no formatting rule survives.
+ * variant's own blocks after the shared core, then the tooling block, so no variant can re-enable a
+ * type-aware rule where there is no type information, then the spec relaxations, so nothing a
+ * variant sets can re-enable a rule inside a spec, then Prettier's switch-offs, so no formatting
+ * rule survives.
  *
  * @param {...Config} variantBlocks
  * @returns {Config[]}
  */
 export function compose(...variantBlocks) {
-    return [...core, ...variantBlocks, specOverrides, eslintConfigPrettier];
+    return [...core, ...variantBlocks, tooling, specOverrides, eslintConfigPrettier];
 }
 
 /** The TypeScript baseline with nothing environment-specific. */

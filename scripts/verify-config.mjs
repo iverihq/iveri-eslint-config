@@ -65,10 +65,18 @@ assert.ok(
     `a default export in source should be refused: ${ruleIdsOf(defaultExport)}`,
 );
 
-// Outside every tsconfig by design, so it must be linted without type information — and then
-// clean, default export included, because its tool requires one.
-const toolingConfig = await lint(node, 'node', 'vite.config.ts');
-assert.deepEqual(toolingConfig.ruleIds, [], `vite.config.ts should lint clean, reported: ${ruleIdsOf(toolingConfig)}`);
+// Outside every tsconfig by design, so each variant must lint it without type information — and
+// then clean, default export included, because its tool requires one. Every variant, because a
+// variant's own block can re-enable a type-aware rule that would abort the whole run here.
+for (const [variant, fixture, file] of [
+    [base, 'node', 'vite.config.ts'],
+    [node, 'node', 'vite.config.ts'],
+    [nest, 'nest', 'vitest.config.ts'],
+    [react, 'react', 'vite.config.ts'],
+]) {
+    const outcome = await lint(variant, fixture, file);
+    assert.deepEqual(outcome.ruleIds, [], `${fixture}/${file} should lint clean, reported: ${ruleIdsOf(outcome)}`);
+}
 
 const conditionalHook = await lint(react, 'react', 'src/conditional-hook.tsx');
 assert.ok(

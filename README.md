@@ -47,8 +47,9 @@ rules that matter to us:
 
 ### The order of blocks is the contract
 
-Each variant is `[shared core, variant blocks, spec relaxations, eslint-config-prettier]`. Flat
-config resolves by position, so nothing a variant sets can re-enable a rule in a spec, and no
+Each variant is `[shared core, variant blocks, tooling files, spec relaxations, eslint-config-prettier]`.
+Flat config resolves by position, so no variant can re-enable a type-aware rule on a tooling config
+that has no type information, nothing a variant sets can re-enable a rule in a spec, and no
 formatting rule survives Prettier's switch-offs. `compose()` is exported for a repo that needs a
 variant of its own and must keep that order.
 
@@ -72,4 +73,5 @@ variant of its own and must keep that order.
 `pnpm test` lints fixtures through every variant with the ESLint this package declares: a decorated
 NestJS class keeps its value import, a plain type import is fixed to `import type`, an unordered
 import and a default export are refused, a tooling config may default-export, and a conditional
-hook breaks `rules-of-hooks`. The package also lints itself with `node`.
+hook breaks `rules-of-hooks`. A tooling config is linted through **every** variant, and a fixture
+that fails to parse fails the run. The package also lints itself with `node`.
