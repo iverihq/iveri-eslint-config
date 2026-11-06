@@ -1,6 +1,6 @@
 {
   "name": "@iveri/eslint-config",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Shared ESLint flat configurations for Iveri repos",
   "license": "MIT",
   "repository": {
