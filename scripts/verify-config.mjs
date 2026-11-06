@@ -1,29 +1,75 @@
 /**
- * Loads every exported variant through ESLint itself. A malformed flat config only fails when
- * a repo runs `eslint`, which is too late — this catches it at publish time instead.
+ * Lints fixtures through every published variant with the ESLint this package declares.
+ *
+ * A malformed flat config only fails when a repo runs `eslint`, and a rule that is configured but
+ * not doing what we think fails nowhere at all. Each assertion pins one behaviour a consumer
+ * relies on — above all that the type-import fixer never turns an injected class into
+ * `import type`, which would compile, lint clean, and leave NestJS injecting `Object`.
  */
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
-import { Linter } from 'eslint';
+import { ESLint } from 'eslint';
 
-const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const require = createRequire(import.meta.url);
+import { base, nest, node, react } from '../index.js';
 
-const { base, nest, react } = require(resolve(PACKAGE_ROOT, 'index.js'));
+const FIXTURES = resolve(import.meta.dirname, '..', 'test', 'fixtures');
 
-for (const [name, config] of Object.entries({ base, nest, react })) {
+for (const [name, config] of Object.entries({ base, nest, node, react })) {
     assert.ok(Array.isArray(config) && config.length > 0, `${name} must be a non-empty flat config array`);
-
-    // Linter.verify throws on a structurally invalid flat config.
-    const linter = new Linter({ configType: 'flat' });
-    const messages = linter.verify('const answer = 1;\n', [
-        ...config.filter((block) => !block.languageOptions?.parserOptions?.projectService),
-        { files: ['**/*.js'] },
-    ]);
-    assert.ok(Array.isArray(messages), `${name} did not produce a valid lint result`);
 }
 
-console.log('@iveri/eslint-config: base, nest and react variants load');
+/** Lints one fixture file through a variant, optionally applying fixes in memory. */
+async function lint(variant, fixture, file, { fix = false } = {}) {
+    const cwd = resolve(FIXTURES, fixture);
+    const eslint = new ESLint({
+        cwd,
+        fix,
+        overrideConfigFile: true,
+        overrideConfig: [...variant, { languageOptions: { parserOptions: { tsconfigRootDir: cwd } } }],
+    });
+    const [result] = await eslint.lintFiles([file]);
+
+    return { ruleIds: result.messages.map((message) => message.ruleId), result };
+}
+
+const ruleIdsOf = (outcome) => outcome.ruleIds.join(', ') || 'none';
+
+// NestJS: an injected class is a type annotation to the eye and a runtime value to DI.
+const injected = await lint(nest, 'nest', 'src/scheduler.ts', { fix: true });
+assert.equal(injected.result.output, undefined, 'the nest variant rewrote a file that carries decorators');
+assert.deepEqual(injected.ruleIds, [], `scheduler.ts should lint clean, reported: ${ruleIdsOf(injected)}`);
+
+// Everywhere else, a type imported as a value is fixed to a separate `import type`.
+const typeImport = await lint(node, 'node', 'src/type-import.ts', { fix: true });
+assert.match(
+    typeImport.result.output ?? '',
+    /^import type \{ Shape \} from '\.\/shape\.js';$/mu,
+    'a type-only import should be fixed to a separate `import type` statement',
+);
+
+const unordered = await lint(node, 'node', 'src/unordered.ts');
+assert.ok(
+    unordered.ruleIds.includes('import-x/order'),
+    `unordered.ts should violate import-x/order: ${ruleIdsOf(unordered)}`,
+);
+
+const defaultExport = await lint(node, 'node', 'src/default-export.ts');
+assert.ok(
+    defaultExport.ruleIds.includes('import-x/no-default-export'),
+    `a default export in source should be refused: ${ruleIdsOf(defaultExport)}`,
+);
+
+const toolingConfig = await lint(node, 'node', 'vite.config.ts');
+assert.ok(
+    !toolingConfig.ruleIds.includes('import-x/no-default-export'),
+    'a tooling config may default-export, because its tool requires it',
+);
+
+const conditionalHook = await lint(react, 'react', 'src/conditional-hook.tsx');
+assert.ok(
+    conditionalHook.ruleIds.includes('react-hooks/rules-of-hooks'),
+    `a conditional hook should violate rules-of-hooks: ${ruleIdsOf(conditionalHook)}`,
+);
+
+console.log('@iveri/eslint-config: base, node, nest and react load under ESLint 10 and enforce what they promise');

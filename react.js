@@ -1,40 +1,44 @@
-const globals = require('globals');
-const reactHooks = require('eslint-plugin-react-hooks');
-const reactRefresh = require('eslint-plugin-react-refresh');
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
 
-const { base, specOverrides } = require('./base');
+import { compose, TS_FILES } from './base.js';
 
 /**
- * React + Vite apps. `react-refresh` is what keeps hot reload from silently breaking:
- * a module that exports both a component and a helper loses its refresh boundary.
+ * React apps a bundler builds. The hooks plugin's recommended set includes the React Compiler's
+ * rules — purity, refs, state set during render or in an effect — which find real defects
+ * whether or not the compiler itself is turned on.
+ *
+ * `react-refresh` is what keeps hot reload from silently breaking: a module that exports both a
+ * component and a helper loses its refresh boundary.
  */
-const react = [
-    ...base,
+export const react = compose(
     {
-        files: ['**/*.ts', '**/*.tsx'],
+        files: TS_FILES,
         languageOptions: {
             globals: {
                 ...globals.browser,
             },
         },
+    },
+    {
+        files: TS_FILES,
+        ...reactHooks.configs.flat.recommended,
+    },
+    {
+        files: TS_FILES,
         plugins: {
-            'react-hooks': reactHooks,
             'react-refresh': reactRefresh,
         },
         rules: {
-            ...reactHooks.configs.recommended.rules,
             'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
         },
     },
     {
-        // Route modules and lazy-loaded pages are the one place react-router wants a default export.
-        files: ['**/vite.config.ts', '**/tailwind.config.ts', '**/*.route.tsx'],
+        // A lazily loaded page is the one place React wants a default export (`React.lazy`).
+        files: ['**/*.route.tsx'],
         rules: {
-            'import/no-default-export': 'off',
+            'import-x/no-default-export': 'off',
         },
     },
-    // Last, so the blocks above cannot re-enable a rule in a spec file.
-    specOverrides,
-];
-
-module.exports = { react };
+);

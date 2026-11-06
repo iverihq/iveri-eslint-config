@@ -1,13 +1,15 @@
-// This repo lints itself with the config it publishes — the most direct proof that the
-// exported flat configs actually load and run.
-const { base } = require('./base');
+// The package lints itself with the config it publishes — the most direct proof that the
+// exported flat configs load and run under the ESLint version it declares.
+import { node } from './index.js';
 
-module.exports = [
-    { ignores: ['base.js', 'index.js', 'nest.js', 'react.js', 'eslint.config.js'] },
-    ...base,
+export default [
+    ...node,
     {
         languageOptions: {
-            parserOptions: { tsconfigRootDir: __dirname },
+            parserOptions: { tsconfigRootDir: import.meta.dirname },
         },
+    },
+    {
+        ignores: ['test/fixtures/**'],
     },
 ];
